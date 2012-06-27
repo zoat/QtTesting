@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
 
-#include "pqEventTranslator.h"
+
 
 #include "pqAbstractButtonEventTranslator.h"
 #include "pqAbstractItemViewEventTranslator.h"
@@ -38,7 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqBasicWidgetEventTranslator.h"
 #include "pqComboBoxEventTranslator.h"
 #include "pqDoubleSpinBoxEventTranslator.h"
+#include "pqEventCheckpoint.h"
 #include "pqEventComment.h"
+#include "pqEventTranslator.h"
 #include "pqLineEditEventTranslator.h"
 #include "pqMenuEventTranslator.h"
 #include "pqObjectNaming.h"
@@ -61,16 +63,25 @@ struct pqEventTranslator::pqImplementation
   pqImplementation()
   {
   this->EventComment = 0;
+  this->EventCheckpoint = 0;
   }
-
+  
+   
   ~pqImplementation()
   {
-  if(this->EventComment)
+  if(this->EventCheckpoint)
+    {
+    //delete this->EventComment;
+    
+    delete this->EventCheckpoint;
+    }
+    
+   if(this->EventComment)
     {
     delete this->EventComment;
     }
   }
-
+  pqEventCheckpoint* EventCheckpoint;
   pqEventComment* EventComment;
   /// Stores the working set of widget translators  
   QList<pqWidgetEventTranslator*> Translators;
@@ -184,6 +195,7 @@ pqWidgetEventTranslator* pqEventTranslator::getWidgetEventTranslator(
 // ----------------------------------------------------------------------------
 int pqEventTranslator::getWidgetEventTranslatorIndex(const QString& className)
 {
+qDebug()<<"check the translator";
   for (int i = 0 ; i < this->Implementation->Translators.count() ; ++i)
     {
     if (this->Implementation->Translators.at(i)->metaObject()->className() ==
@@ -204,11 +216,23 @@ QList<pqWidgetEventTranslator*> pqEventTranslator::translators() const
 // ----------------------------------------------------------------------------
 void pqEventTranslator::addDefaultEventManagers(pqTestUtility* util)
 {
+qDebug()<<"check the connection action";
+  this->Implementation->EventCheckpoint = new pqEventCheckpoint(util);
   this->Implementation->EventComment = new pqEventComment(util);
-  QObject::connect(this->Implementation->EventComment,
-                   SIGNAL(recordComment(QObject*,QString,QString)),
+  QObject::connect(this->Implementation->EventCheckpoint,
+                   SIGNAL(recordCheckpoint(QObject*,QString,QString)),
                    this,
                    SLOT(onRecordEvent(QObject*,QString,QString)));
+                   
+                   
+ QObject::connect(this->Implementation->EventComment,
+                   SIGNAL(recordComment(QObject*,QString,QString)),
+                   this,
+                   SLOT(onRecordEvent(QObject*,QString,QString)));                  
+                   
+                   
+                   
+                   
 }
 
 // ----------------------------------------------------------------------------
@@ -216,6 +240,12 @@ pqEventComment* pqEventTranslator::eventComment() const
 {
   return this->Implementation->EventComment;
 }
+// ----------------------------------------------------------------------------
+pqEventCheckpoint* pqEventTranslator::eventCheckpoint() const
+{
+  return this->Implementation->EventCheckpoint;
+}
+
 
 // ----------------------------------------------------------------------------
 void pqEventTranslator::ignoreObject(QObject* Object)
@@ -282,12 +312,31 @@ void pqEventTranslator::onRecordEvent(QObject* Object,
 
   QString name;
   // When sender is pqEventObject, the Object name can be NULL.
-  if (!qobject_cast<pqEventComment*>(this->sender()) || Object)
+  qDebug()<<"check the connection action new";
+  if (!qobject_cast<pqEventCheckpoint*>(this->sender()) || Object)
     {
     name = pqObjectNaming::GetName(*Object);
     if(name.isEmpty())
       return;
     }
+   if (!qobject_cast<pqEventComment*>(this->sender()) || Object)
+    {
+    name = pqObjectNaming::GetName(*Object);
+    if(name.isEmpty())
+      return;
+    } 
 
+    
   emit recordEvent(name, Command, Arguments);
 }
+// ----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+

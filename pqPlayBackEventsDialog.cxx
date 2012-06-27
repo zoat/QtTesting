@@ -29,15 +29,15 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
-
+#include "pqCheckpointEventPlayer.h"
 #include "pqCommentEventPlayer.h"
 #include "pqEventDispatcher.h"
 #include "pqEventPlayer.h"
 #include "pqPlayBackEventsDialog.h"
 #include "pqTestUtility.h"
-
 #include "ui_pqPlayBackEventsDialog.h"
 
+#include <QString>
 #include <QCheckBox>
 #include <QFile>
 #include <QFileDialog>
@@ -49,15 +49,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QStringListModel>
 #include <QTextStream>
 #include <QTimer>
-
 #include <QDebug>
 
 //////////////////////////////////////////////////////////////////////////////////
-// pqImplementation
+ //pqImplementation
 
-struct pqPlayBackEventsDialog::pqImplementation
-{
-public:
+ struct pqPlayBackEventsDialog::pqImplementation
+ {
+ public:
   pqImplementation(pqEventPlayer& player,
                    pqEventDispatcher& dispatcher,
                    pqTestUtility* testUtility);
@@ -79,8 +78,8 @@ public:
   QStringList   Filenames;
   QStringList   CurrentEvent;
   QRect         OldRect;
+  QString buffer;
 };
-
 // ----------------------------------------------------------------------------
 pqPlayBackEventsDialog::pqImplementation::pqImplementation(pqEventPlayer& player,
                                                            pqEventDispatcher& dispatcher,
@@ -94,6 +93,7 @@ pqPlayBackEventsDialog::pqImplementation::pqImplementation(pqEventPlayer& player
   this->CurrentFile = 0;
   this->Filenames = QStringList();
   this->CurrentEvent = QStringList();
+  this->buffer= QString();
 }
 
 // ----------------------------------------------------------------------------
@@ -124,6 +124,20 @@ void pqPlayBackEventsDialog::pqImplementation::init(pqPlayBackEventsDialog* dial
     QObject::connect(commentPlayer, SIGNAL(comment(QString)),
                      this->Ui.logBrowser, SLOT(append(QString)));
     }
+
+pqWidgetEventPlayer* widgetPlayers =
+      this->Player.getWidgetEventPlayer(QString("pqCheckpointEventPlayer"));
+  pqCheckpointEventPlayer* checkpointPlayer =
+      qobject_cast<pqCheckpointEventPlayer*>(widgetPlayers);
+  if (checkpointPlayer)
+    {
+    QObject::connect(checkpointPlayer, SIGNAL(checkpoint(QString)),
+                     this->Ui.logBrowser, SLOT(append(QString)));
+      QObject::connect(checkpointPlayer, SIGNAL(checkpoint(QString)),
+                     dialog, SLOT(compare(QString)));                
+                     
+    }
+
 
   dialog->setMaximumHeight(dialog->minimumSizeHint().height());
 
@@ -165,7 +179,33 @@ void pqPlayBackEventsDialog::pqImplementation::init(pqPlayBackEventsDialog* dial
                    this->Ui.logBrowser, SLOT(append(QString)));
 
 }
-
+// ----------------------------------------------------------------------------
+ void pqPlayBackEventsDialog::compare(const QString& str1) 
+ {
+   qDebug()<<"action compare";
+   QString y = "#";
+   int tt= str1.lastIndexOf(y);     
+   QString ttt =str1.left(tt);
+   QString tts =str1.mid(tt+1); 
+    
+   qDebug()<< tts;
+   QString yy=this->buffer;
+   qDebug()<< yy;
+   QString yt = ":";
+   int tty= yy.lastIndexOf(yt);
+   QString ttsy =yy.mid(tty+2);
+   qDebug()<< ttsy;
+   
+  if (ttsy==tts)
+  {
+   qDebug() << "the test pass the value of" << ttt<< ":" << tts <<"is equal to"<< ttsy;
+  }
+  else
+  {
+  qDebug() << "the test failed because the value of" << ttt<< ":" << tts <<"is not equal"<< ttsy;
+  }
+  	
+ }
 // ----------------------------------------------------------------------------
 void pqPlayBackEventsDialog::pqImplementation::setProgressBarsValue(int value)
 {
@@ -467,11 +507,16 @@ void pqPlayBackEventsDialog::updateUi()
     this->Implementation->Ui.currentFileLabel->setText(
         QString("No Test is playing ..."));
     }
-
+   
+   if(!(argument.contains("#", Qt::CaseInsensitive)))
+   {
+   this->buffer=argument;
+   }
+  
   this->Implementation->Ui.commandLabel->setText(command);
   this->Implementation->Ui.argumentsLabel->setText(argument);
   this->Implementation->Ui.objectLabel->setText(object);
-
+  
   this->update();
 }
 

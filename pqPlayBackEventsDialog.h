@@ -65,7 +65,8 @@ private slots:
   void onStarted(const QString&);
   void onStopped();
   void onModal(bool value);
-
+  ///Compare the value of the widget and the checkpoint and displayed on the screen.
+  void compare(const QString&);
 public slots:
   virtual void done(int);
   void updateUi();
@@ -77,7 +78,7 @@ private:
   void loadFiles(const QStringList& filenames);
   void addFile(const QString& filename);
   QStringList selectedFileNames() const;
-
+   QString buffer;
   pqPlayBackEventsDialog(const pqPlayBackEventsDialog&);            // Not Implemented
   pqPlayBackEventsDialog& operator=(const pqPlayBackEventsDialog&); // Not Implemented
 

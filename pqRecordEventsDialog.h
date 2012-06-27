@@ -45,30 +45,36 @@ class QTTESTING_EXPORT pqRecordEventsDialog :
 {
   Q_OBJECT
   
-public:
-  /**
-  Creates the dialog and begins translating user input with the supplied translator.
-  */
+ public:
+  
+  //Creates the dialog and begins translating user input with the supplied translator.
+  
   pqRecordEventsDialog(pqEventRecorder* recorder,
                        pqTestUtility* testUtility,
                        QWidget* Parent);
-
-private slots:
+ ~pqRecordEventsDialog();
+ 
+ private slots:
   virtual void done(int);
+  ///Catch in a buffer the argument and the name of widget wich will be add as checkpoint.
   void onEventRecorded(const QString&, const QString&, const QString&);
 
   void addComment();
-
-public slots:
-  void updateUi();
-
-private:
+  ///Allows user to add checkpoint. 
+  void addCheckpoint();
+  
+ public slots:
+   ///Add the argument in a buffer. 
+   void updateUi();
+  
+ 
+ private:
   pqRecordEventsDialog(const pqRecordEventsDialog&);
   pqRecordEventsDialog& operator=(const pqRecordEventsDialog&);
-  ~pqRecordEventsDialog();
-
+   
+  
   void ignoreObject(QObject* object);
-
+  QString buffer;
   struct pqImplementation;
   pqImplementation* const Implementation;
 };

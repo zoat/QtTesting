@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqAbstractMiscellaneousEventPlayer.h"
 #include "pqAbstractStringEventPlayer.h"
 #include "pqBasicWidgetEventPlayer.h"
+#include "pqCheckpointEventPlayer.h"
 #include "pqCommentEventPlayer.h"
 #include "pqObjectNaming.h"
 #include "pqTabBarEventPlayer.h"
@@ -63,7 +64,8 @@ pqEventPlayer::~pqEventPlayer()
 
 // ----------------------------------------------------------------------------
 void pqEventPlayer::addDefaultWidgetEventPlayers(pqTestUtility* util)
-{
+{                       
+  addWidgetEventPlayer(new pqCheckpointEventPlayer(util));
   addWidgetEventPlayer(new pqCommentEventPlayer(util));
   addWidgetEventPlayer(new pqBasicWidgetEventPlayer());
   addWidgetEventPlayer(new pqAbstractActivateEventPlayer());
@@ -159,7 +161,7 @@ void pqEventPlayer::playEvent(const QString& Object,
     return;
     }
 
-  if(!object && !Command.startsWith("comment"))
+  if(!object && !Command.startsWith("checkpoint"))
     {
     qCritical() << pqObjectNaming::lastErrorMessage();
     emit this->errorMessage(pqObjectNaming::lastErrorMessage());
@@ -170,15 +172,15 @@ void pqEventPlayer::playEvent(const QString& Object,
   // Loop through players until the event gets handled ...
   bool accepted = false;
   bool error = false;
-  if (Command.startsWith("comment"))
+  if (Command.startsWith("checkpoint"))
     {
     pqWidgetEventPlayer* widgetPlayer =
-        this->getWidgetEventPlayer(QString("pqCommentEventPlayer"));
-    pqCommentEventPlayer* commentPlayer =
-        qobject_cast<pqCommentEventPlayer*>(widgetPlayer);
-    if (commentPlayer)
+        this->getWidgetEventPlayer(QString("pqCheckpointEventPlayer"));
+    pqCheckpointEventPlayer* checkpointPlayer =
+        qobject_cast<pqCheckpointEventPlayer*>(widgetPlayer);
+    if (checkpointPlayer)
       {
-      accepted = commentPlayer->playEvent(object, Command, Arguments, error);
+      accepted = checkpointPlayer->playEvent(object, Command, Arguments, error);
       }
     }
   else

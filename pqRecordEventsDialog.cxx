@@ -31,14 +31,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =========================================================================*/
 
 // Qt includes
-#include <QDebug>
 #include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QTimer>
 #include <QPushButton>
-
+#include <QKeySequence>
+#include <QShortcut>
+#include <QString>
 // QtTesting includes
+#include "pqEventCheckpoint.h"
 #include "pqEventComment.h"
 #include "pqEventRecorder.h"
 #include "pqRecordEventsDialog.h"
@@ -65,7 +67,7 @@ public:
   }
 
   Ui::pqRecordEventsDialog Ui;
-
+QString buffer;
   pqEventRecorder*    Recorder;
   pqTestUtility*      TestUtility;
 };
@@ -90,11 +92,16 @@ pqRecordEventsDialog::pqRecordEventsDialog(pqEventRecorder* recorder,
 
   QObject::connect(this->Implementation->TestUtility->eventTranslator(),
                    SIGNAL(recordEvent(QString,QString,QString)),
-                   this, SLOT(onEventRecorded(QString,QString,QString)));
+                   this, SLOT(onEventRecorded(QString,QString,QString))); 
 
   QObject::connect(this->Implementation->Ui.commentAddButton,
                    SIGNAL(clicked()),
                    this, SLOT(addComment()));
+                   
+   QObject::connect(this->Implementation->Ui.checkpointButton,
+                   SIGNAL(clicked()),
+                   this, SLOT(addCheckpoint()));                 
+                   
 
   QObject::connect(this->Implementation->Ui.recordPauseButton,
                    SIGNAL(toggled(bool)),
@@ -113,6 +120,8 @@ pqRecordEventsDialog::pqRecordEventsDialog(pqEventRecorder* recorder,
                    SIGNAL(stopped()),
                    this,
                    SLOT(updateUi()));
+  
+  this->buffer= QString();                                                
 }
 
 // ----------------------------------------------------------------------------
@@ -147,7 +156,11 @@ void pqRecordEventsDialog::onEventRecorded(const QString& widget,
     {
     return;
     }
-
+  QString t =argument;
+  QString s =widget;
+  s.append("#");
+  s.append(t);
+  this->buffer= s;
   this->Implementation->Ui.eventWidgetEdit->setText(widget);
   this->Implementation->Ui.eventCommandEdit->setText(command);
   this->Implementation->Ui.eventArgumentEdit->setText(argument);
@@ -155,6 +168,7 @@ void pqRecordEventsDialog::onEventRecorded(const QString& widget,
   this->Implementation->Ui.nbEvents->display(newValue);
 }
 
+ 
 // ----------------------------------------------------------------------------
 void pqRecordEventsDialog::addComment()
 {
@@ -171,6 +185,13 @@ void pqRecordEventsDialog::addComment()
   this->Implementation->Ui.commentTextEdit->clear();
 }
 
+// ----------------------------------------------------------------------------
+void pqRecordEventsDialog::addCheckpoint()
+    
+    {   
+     this->Implementation->Recorder->translator()->eventCheckpoint()->recordCheckpoint(this->buffer);         
+    }
+  
 // ----------------------------------------------------------------------------
 void pqRecordEventsDialog::updateUi()
 {
